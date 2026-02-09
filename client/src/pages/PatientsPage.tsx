@@ -1,77 +1,123 @@
 // client/src/pages/PatientsPage.tsx
 
-import { useState, useEffect } from "react";
-import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
-import { useAppDispatch, useAppSelector } from '../app/hooks';
-import { fetchPatients, deletePatient } from '../features/patients/patientSlice';
-import Header from '../components/layout/Header';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
-import Alert from '../components/ui/Alert';
+import { useState, useEffect } from "react"
+import { Link } from 'react-router-dom'
+import { Plus, Edit, Trash2, Search, Users } from 'lucide-react'
+import { useAppDispatch, useAppSelector } from '../app/hooks'
+import { fetchPatients, deletePatient, clearError } from '../features/patients/patientSlice'
+import { useToast } from '../context/ToastContext'
+import Header from '../components/layout/Header'
+import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
+import { Avatar } from '../components/ui/Avatar'
+import { TableRowSkeleton } from '../components/ui/Skeleton'
+import { cn } from '../lib/utils'
 
-
-// The patients page component
 function PatientsPage() {
-    // Redux hooks
-    const dispatch = useAppDispatch();
-    const { patients, isLoading, error } = useAppSelector((state) => state.patients);
+    const dispatch = useAppDispatch()
+    const { patients, isLoading, error } = useAppSelector((state) => state.patients)
+    const { success, error: showError } = useToast()
 
-    // State
-    const [searchTerm, setSearchTerm] = useState('');
-    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('')
+    const [deleteId, setDeleteId] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
-    // Fetch patients on component mount
     useEffect(() => {
-        dispatch(fetchPatients());
-    },
-    [dispatch]); // Only fetch patients when the component mounts
+        dispatch(fetchPatients())
+    }, [dispatch])
 
-    // Filter patients by search term
-    const filteredPatients = patients.filter((patient) => {
-        // Convert search term to lowercase
-        return patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.condition.toLowerCase().includes(searchTerm.toLowerCase());
-    });
+    // Show error toast when error occurs
+    useEffect(() => {
+        if (error) {
+            showError('Error', error)
+            dispatch(clearError())
+        }
+    }, [error, showError, dispatch])
 
-    // Delete patient
+    const filteredPatients = patients.filter((patient) => 
+        patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.condition.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+
     const handleDelete = async (id: string) => {
         try {
-            await dispatch(deletePatient(id));
-            setDeleteId(null);
-        } catch (error) {
-            console.log(error);
+            setIsDeleting(true)
+            await dispatch(deletePatient(id)).unwrap()
+            success('Patient Deleted', 'The patient has been removed successfully.')
+            setDeleteId(null)
+        } catch (err: any) {
+            showError('Delete Failed', err.message || 'Failed to delete patient')
+        } finally {
+            setIsDeleting(false)
         }
-    };
+    }
 
- return (
-        <div>
+    return (
+        <div className="min-h-screen bg-background">
             <Header title="Patients" />
             
             <div className="p-6">
-                {/* Error Alert */}
-                {error && (
-                    <Alert type="error" message={error} />
-                )}
-                
+                {/* Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <Card className="p-4">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-primary/10 rounded-xl">
+                                <Users className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Total Patients</p>
+                                <p className="text-2xl font-bold text-foreground">{patients.length}</p>
+                            </div>
+                        </div>
+                    </Card>
+                    <Card className="p-4">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-green-500/10 rounded-xl">
+                                <Users className="w-6 h-6 text-green-500" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Admitted</p>
+                                <p className="text-2xl font-bold text-foreground">
+                                    {patients.filter(p => p.isAdmitted).length}
+                                </p>
+                            </div>
+                        </div>
+                    </Card>
+                    <Card className="p-4">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-amber-500/10 rounded-xl">
+                                <Users className="w-6 h-6 text-amber-500" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Outpatient</p>
+                                <p className="text-2xl font-bold text-foreground">
+                                    {patients.filter(p => !p.isAdmitted).length}
+                                </p>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+
                 {/* Actions Bar */}
                 <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
-                    {/* Search */}
                     <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
                         <input
                             type="text"
                             placeholder="Search patients..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={cn(
+                                'w-full h-10 pl-10 pr-4 rounded-xl',
+                                'bg-background border border-input',
+                                'text-foreground placeholder:text-muted-foreground',
+                                'focus:outline-none focus:ring-2 focus:ring-ring'
+                            )}
                         />
                     </div>
                     
-                    {/* Add Button */}
                     <Link to="/patients/add">
-                        <Button className="flex">
-                            <Plus size={20} className="mr-2" />
+                        <Button leftIcon={<Plus size={18} />}>
                             Add Patient
                         </Button>
                     </Link>
@@ -79,128 +125,131 @@ function PatientsPage() {
                 
                 {/* Patients Table */}
                 <Card>
-                    {isLoading ? (
-                        <div className="p-8 text-center text-gray-500">
-                            Loading patients...
-                        </div>
-                    ) : filteredPatients.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">
-                            No patients found
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-gray-50">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-border bg-muted/50">
+                                    <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">
+                                        Patient
+                                    </th>
+                                    <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">
+                                        Age
+                                    </th>
+                                    <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">
+                                        Condition
+                                    </th>
+                                    <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">
+                                        Status
+                                    </th>
+                                    <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">
+                                        Contact
+                                    </th>
+                                    <th className="text-right py-4 px-4 text-sm font-medium text-muted-foreground">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {isLoading ? (
+                                    [...Array(5)].map((_, i) => (
+                                        <TableRowSkeleton key={i} columns={6} />
+                                    ))
+                                ) : filteredPatients.length === 0 ? (
                                     <tr>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
-                                            Name
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
-                                            Age
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
-                                            Condition
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
-                                            Status
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
-                                            Contact
-                                        </th>
-                                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                                            Actions
-                                        </th>
+                                        <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                                            No patients found
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredPatients.map((patient) => (
+                                ) : (
+                                    filteredPatients.map((patient) => (
                                         <tr 
                                             key={patient._id} 
-                                            className="border-t border-gray-100 hover:bg-gray-50"
+                                            className="border-b border-border hover:bg-muted/50 transition-colors"
                                         >
-                                            <td className="py-3 px-4">
+                                            <td className="py-4 px-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-medium text-sm">
-                                                        {patient.name.charAt(0)}
-                                                    </div>
-                                                    <span className="font-medium text-gray-800">
+                                                    <Avatar name={patient.name} size="sm" />
+                                                    <span className="font-medium text-foreground">
                                                         {patient.name}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="py-3 px-4 text-gray-600">
+                                            <td className="py-4 px-4 text-muted-foreground">
                                                 {patient.age} years
                                             </td>
-                                            <td className="py-3 px-4 text-gray-600">
+                                            <td className="py-4 px-4 text-muted-foreground">
                                                 {patient.condition}
                                             </td>
-                                            <td className="py-3 px-4">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                            <td className="py-4 px-4">
+                                                <span className={cn(
+                                                    'px-2.5 py-1 text-xs font-medium rounded-full',
                                                     patient.isAdmitted 
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : 'bg-gray-100 text-gray-700'
-                                                }`}>
+                                                        ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                                        : 'bg-muted text-muted-foreground'
+                                                )}>
                                                     {patient.isAdmitted ? 'Admitted' : 'Outpatient'}
                                                 </span>
                                             </td>
-                                            <td className="py-3 px-4 text-gray-600">
+                                            <td className="py-4 px-4 text-muted-foreground">
                                                 {patient.phone || patient.email || 'N/A'}
                                             </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex justify-end gap-2">
+                                            <td className="py-4 px-4">
+                                                <div className="flex justify-end gap-1">
                                                     <Link to={`/patients/edit/${patient._id}`}>
-                                                        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
-                                                            <Edit size={18} />
-                                                        </button>
+                                                        <Button variant="ghost" size="icon">
+                                                            <Edit size={16} />
+                                                        </Button>
                                                     </Link>
-                                                    <button 
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon"
                                                         onClick={() => setDeleteId(patient._id)}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                     >
-                                                        <Trash2 size={18} />
-                                                    </button>
+                                                        <Trash2 size={16} />
+                                                    </Button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </Card>
             </div>
             
             {/* Delete Confirmation Modal */}
             {deleteId && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
+                    <Card className="w-full max-w-md mx-4 p-6 animate-slide-in-from-bottom">
+                        <h3 className="text-lg font-semibold text-foreground mb-2">
                             Delete Patient
                         </h3>
-                        <p className="text-gray-600 mb-6">
+                        <p className="text-muted-foreground mb-6">
                             Are you sure you want to delete this patient? This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-3">
                             <Button 
-                                variant="secondary" 
+                                variant="outline" 
                                 onClick={() => setDeleteId(null)}
+                                disabled={isDeleting}
                             >
                                 Cancel
                             </Button>
                             <Button 
                                 variant="danger" 
                                 onClick={() => handleDelete(deleteId)}
+                                isLoading={isDeleting}
                             >
                                 Delete
                             </Button>
                         </div>
-                    </div>
+                    </Card>
                 </div>
             )}
         </div>
     )
 }
 
-// Export the component
-export default PatientsPage;
-    
+export default PatientsPage

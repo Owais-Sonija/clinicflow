@@ -2,8 +2,11 @@
 
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Menu, X, Phone, Clock,  } from 'lucide-react'
+import { Menu, X, Phone, Clock } from 'lucide-react'
 import { useAppSelector } from '../../app/hooks'
+import { ThemeToggle } from '../ui/ThemeToggle'
+import Button from '../ui/Button'
+import { cn } from '../../lib/utils'
 
 const navLinks = [
     { name: 'Home', path: '/' },
@@ -20,7 +23,7 @@ function Navbar() {
     return (
         <header className="w-full">
             {/* Top Bar */}
-            <div className="bg-blue-600 text-white py-2 hidden md:block">
+            <div className="bg-primary text-primary-foreground py-2 hidden md:block">
                 <div className="container mx-auto px-4 flex justify-between items-center text-sm">
                     <div className="flex items-center gap-6">
                         <span className="flex items-center gap-2">
@@ -36,7 +39,7 @@ function Navbar() {
                         {isAuthenticated ? (
                             <Link 
                                 to="/dashboard" 
-                                className="hover:text-blue-200 transition-colors"
+                                className="hover:text-primary-foreground/80 transition-colors"
                             >
                                 Go to Dashboard
                             </Link>
@@ -44,14 +47,14 @@ function Navbar() {
                             <>
                                 <Link 
                                     to="/login" 
-                                    className="hover:text-blue-200 transition-colors"
+                                    className="hover:text-primary-foreground/80 transition-colors"
                                 >
                                     Login
                                 </Link>
-                                <span>|</span>
+                                <span className="opacity-50">|</span>
                                 <Link 
                                     to="/register" 
-                                    className="hover:text-blue-200 transition-colors"
+                                    className="hover:text-primary-foreground/80 transition-colors"
                                 >
                                     Register
                                 </Link>
@@ -62,17 +65,17 @@ function Navbar() {
             </div>
 
             {/* Main Navbar */}
-            <nav className="bg-white shadow-md sticky top-0 z-50">
+            <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border sticky top-0 z-50">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between h-20">
                         {/* Logo */}
                         <Link to="/" className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-xl">C</span>
+                            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+                                <span className="text-primary-foreground font-bold text-xl">C</span>
                             </div>
                             <div>
-                                <span className="text-xl font-bold text-gray-800">Clinic</span>
-                                <span className="text-xl font-bold text-blue-600">Flow</span>
+                                <span className="text-xl font-bold text-foreground">Clinic</span>
+                                <span className="text-xl font-bold text-primary">Flow</span>
                             </div>
                         </Link>
 
@@ -83,9 +86,10 @@ function Navbar() {
                                     key={link.path}
                                     to={link.path}
                                     className={({ isActive }) =>
-                                        `text-sm font-medium transition-colors hover:text-blue-600 ${
-                                            isActive ? 'text-blue-600' : 'text-gray-700'
-                                        }`
+                                        cn(
+                                            'text-sm font-medium transition-colors hover:text-primary',
+                                            isActive ? 'text-primary' : 'text-muted-foreground'
+                                        )
                                     }
                                 >
                                     {link.name}
@@ -93,28 +97,31 @@ function Navbar() {
                             ))}
                         </div>
 
-                        {/* CTA Button */}
-                        <div className="hidden lg:block">
-                            <Link
-                                to="/book-appointment"
-                                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30"
-                            >
-                                Book Appointment
+                        {/* Right Section */}
+                        <div className="hidden lg:flex items-center gap-4">
+                            <ThemeToggle />
+                            <Link to="/book-appointment">
+                                <Button>
+                                    Book Appointment
+                                </Button>
                             </Link>
                         </div>
 
                         {/* Mobile Menu Button */}
-                        <button
-                            className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-                            onClick={() => setIsOpen(!isOpen)}
-                        >
-                            {isOpen ? <X size={24} /> : <Menu size={24} />}
-                        </button>
+                        <div className="flex items-center gap-2 lg:hidden">
+                            <ThemeToggle />
+                            <button
+                                className="p-2 rounded-lg hover:bg-accent"
+                                onClick={() => setIsOpen(!isOpen)}
+                            >
+                                {isOpen ? <X size={24} /> : <Menu size={24} />}
+                            </button>
+                        </div>
                     </div>
 
                     {/* Mobile Menu */}
                     {isOpen && (
-                        <div className="lg:hidden py-4 border-t">
+                        <div className="lg:hidden py-4 border-t border-border animate-fade-in">
                             <div className="flex flex-col gap-2">
                                 {navLinks.map((link) => (
                                     <NavLink
@@ -122,11 +129,12 @@ function Navbar() {
                                         to={link.path}
                                         onClick={() => setIsOpen(false)}
                                         className={({ isActive }) =>
-                                            `px-4 py-3 rounded-lg font-medium transition-colors ${
+                                            cn(
+                                                'px-4 py-3 rounded-xl font-medium transition-colors',
                                                 isActive
-                                                    ? 'bg-blue-50 text-blue-600'
-                                                    : 'text-gray-700 hover:bg-gray-50'
-                                            }`
+                                                    ? 'bg-primary/10 text-primary'
+                                                    : 'text-muted-foreground hover:bg-accent'
+                                            )
                                         }
                                     >
                                         {link.name}
@@ -135,18 +143,20 @@ function Navbar() {
                                 <Link
                                     to="/book-appointment"
                                     onClick={() => setIsOpen(false)}
-                                    className="mx-4 mt-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium text-center hover:bg-blue-700 transition-colors"
+                                    className="mx-4 mt-2"
                                 >
-                                    Book Appointment
+                                    <Button className="w-full">
+                                        Book Appointment
+                                    </Button>
                                 </Link>
                                 
                                 {/* Mobile Auth Links */}
-                                <div className="flex gap-4 px-4 mt-4 pt-4 border-t">
+                                <div className="flex gap-4 px-4 mt-4 pt-4 border-t border-border">
                                     {isAuthenticated ? (
                                         <Link
                                             to="/dashboard"
                                             onClick={() => setIsOpen(false)}
-                                            className="text-blue-600 font-medium"
+                                            className="text-primary font-medium"
                                         >
                                             Go to Dashboard
                                         </Link>
@@ -155,14 +165,14 @@ function Navbar() {
                                             <Link
                                                 to="/login"
                                                 onClick={() => setIsOpen(false)}
-                                                className="text-gray-600 font-medium"
+                                                className="text-muted-foreground font-medium"
                                             >
                                                 Login
                                             </Link>
                                             <Link
                                                 to="/register"
                                                 onClick={() => setIsOpen(false)}
-                                                className="text-blue-600 font-medium"
+                                                className="text-primary font-medium"
                                             >
                                                 Register
                                             </Link>

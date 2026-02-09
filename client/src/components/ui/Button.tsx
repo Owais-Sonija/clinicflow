@@ -1,77 +1,95 @@
 // client/src/components/ui/Button.tsx
 
-import type { ButtonHTMLAttributes, ReactNode } from "react";
-
-// Reusable button component with different variants
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { Loader2 } from 'lucide-react'
+import { cn } from '../../lib/utils'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger'; // Different button styles
-    children: ReactNode; // Button label or content
-    isLoading?: boolean; // Loading state
-    fullWidth?: boolean; // Full width button
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success'
+  size?: 'sm' | 'md' | 'lg' | 'icon'
+  children: ReactNode
+  isLoading?: boolean
+  leftIcon?: ReactNode
+  rightIcon?: ReactNode
 }
 
-// Button function component
-function Button({
-    variant = 'primary',
-    children,
-    isLoading = false,
-    fullWidth = false,
-    disabled,
-    className = '',
-    ...props
-}: ButtonProps) {
-     // Base styles (always applied)
-    const baseStyles = 'px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ 
+    variant = 'primary', 
+    size = 'md',
+    children, 
+    isLoading = false, 
+    leftIcon,
+    rightIcon,
+    disabled, 
+    className = '', 
+    ...props 
+  }, ref) => {
+    const baseStyles = cn(
+      'inline-flex items-center justify-center gap-2 font-medium transition-all duration-200',
+      'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background',
+      'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
+      'active:scale-[0.98]'
+    )
 
-      // Variant styles (changes based on variant prop)
     const variants = {
-        primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-        secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500',
-        danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
+      primary: cn(
+        'bg-primary text-primary-foreground hover:bg-primary/90',
+        'focus:ring-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30'
+      ),
+      secondary: cn(
+        'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        'focus:ring-secondary'
+      ),
+      outline: cn(
+        'border-2 border-primary text-primary bg-transparent',
+        'hover:bg-primary hover:text-primary-foreground focus:ring-primary'
+      ),
+      ghost: cn(
+        'bg-transparent hover:bg-accent hover:text-accent-foreground',
+        'focus:ring-accent'
+      ),
+      danger: cn(
+        'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        'focus:ring-destructive shadow-lg shadow-destructive/25'
+      ),
+      success: cn(
+        'bg-green-600 text-white hover:bg-green-700',
+        'focus:ring-green-500 shadow-lg shadow-green-600/25'
+      ),
     }
-    
-    // Width styles
-    const widthStyles = fullWidth ? 'w-full' : '';
+
+    const sizes = {
+      sm: 'h-8 px-3 text-sm rounded-lg',
+      md: 'h-10 px-4 text-sm rounded-xl',
+      lg: 'h-12 px-6 text-base rounded-xl',
+      icon: 'h-10 w-10 rounded-xl',
+    }
 
     return (
-        <button
-            className={`${baseStyles} ${variants[variant]} ${widthStyles} ${className}`}
-            disabled={disabled || isLoading}
-            {...props}
-        >
-            {isLoading ? (
-                // Loading spinner
-                <span className="flex items-center justify-center">
-                    <svg 
-                        className="animate-spin h-5 w-5 mr-2" 
-                        fill="none" 
-                        viewBox="0 0 24 24"
-                    >
-                        <circle 
-                            className="opacity-25" 
-                            cx="12" 
-                            cy="12" 
-                            r="10" 
-                            stroke="currentColor" 
-                            strokeWidth="4"
-                        />
-                        <path 
-                            className="opacity-75" 
-                            fill="currentColor" 
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                    </svg>
-                    Loading...
-                </span>
-            )  : (
- <span className="flex items-center justify-center gap-2">
-        {children}
-    </span>
-            )}
-        </button>
-    );
-}
+      <button
+        ref={ref}
+        className={cn(baseStyles, variants[variant], sizes[size], className)}
+        disabled={disabled || isLoading}
+        {...props}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Loading...</span>
+          </>
+        ) : (
+          <>
+            {leftIcon}
+            {children}
+            {rightIcon}
+          </>
+        )}
+      </button>
+    )
+  }
+)
 
-// Export Button component
-export default Button;
+Button.displayName = 'Button'
+
+export default Button
