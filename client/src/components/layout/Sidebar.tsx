@@ -8,6 +8,9 @@ import { useToast } from '../../context/ToastContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { Avatar } from '../ui/Avatar';
 import { cn } from '../../lib/utils';
+import { BarChart3 } from 'lucide-react';
+
+
 
 // ============ ICONS ============
 import {
@@ -29,6 +32,7 @@ const navItems = [
     { label: 'Patients', path: '/patients', icon: Users },
     { label: 'Doctors', path: '/doctors', icon: UserCog },
     { label: 'Appointments', path: '/appointments', icon: Calendar },
+        { label: 'Analytics', path: '/analytics', icon: BarChart3 },
     { label: 'Reports', path: '/reports', icon: FileText },
     { label: 'Settings', path: '/settings', icon: Settings },
 ];

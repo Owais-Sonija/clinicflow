@@ -14,6 +14,7 @@ import ContactPage from './pages/public/ContactPage'
 import ServicesPage from './pages/public/ServicesPage'
 import DoctorsListPage from './pages/public/DoctorsListPage'
 import BookAppointmentPage from './pages/public/BookAppointmentPage'
+import AnalyticsPage from './pages/AnalyticsPage';
 
 // Auth Pages
 import LoginPage from './pages/LoginPage'
@@ -108,6 +109,9 @@ function App() {
                 
                 {/* Settings */}
                 <Route path="/settings" element={<SettingsPage />} />
+
+                {/* Analytics */}
+                <Route path="/analytics" element={<AnalyticsPage />} />
             </Route>
 
             {/* ========== FALLBACK ========== */}
