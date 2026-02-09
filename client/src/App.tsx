@@ -3,9 +3,23 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAppSelector } from './app/hooks'
 
-// Pages
+// Layouts
+import DashboardLayout from './components/layout/DashboardLayout'
+import PublicLayout from './components/layout/PublicLayout'
+
+// Public Pages
+import HomePage from './pages/public/HomePage'
+import AboutPage from './pages/public/AboutPage'
+import ContactPage from './pages/public/ContactPage'
+import ServicesPage from './pages/public/ServicesPage'
+import DoctorsListPage from './pages/public/DoctorsListPage'
+import BookAppointmentPage from './pages/public/BookAppointmentPage'
+
+// Auth Pages
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+
+// Dashboard Pages
 import DashboardPage from './pages/DashboardPage'
 import PatientsPage from './pages/PatientsPage'
 import PatientFormPage from './pages/PatientFormPage'
@@ -13,11 +27,9 @@ import DoctorsPage from './pages/DoctorsPage'
 import DoctorFormPage from './pages/DoctorFormPage'
 import AppointmentsPage from './pages/AppointmentsPage'
 import AppointmentFormPage from './pages/AppointmentFormPage'
+import SettingsPage from './pages/SettingsPage'
 
-// Layout
-import DashboardLayout from './components/layout/DashboardLayout'
-
-// Protected Route
+// Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAppSelector((state) => state.auth)
 
@@ -28,8 +40,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <>{children}</>
 }
 
-// Public Route
-function PublicRoute({ children }: { children: React.ReactNode }) {
+// Public Route Component (redirects if logged in)
+function AuthRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAppSelector((state) => state.auth)
 
     if (isAuthenticated) {
@@ -42,25 +54,35 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 function App() {
     return (
         <Routes>
-            {/* Public Routes */}
+            {/* ========== PUBLIC WEBSITE ROUTES ========== */}
+            <Route element={<PublicLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/services" element={<ServicesPage />} />
+                <Route path="/our-doctors" element={<DoctorsListPage />} />
+                <Route path="/book-appointment" element={<BookAppointmentPage />} />
+            </Route>
+
+            {/* ========== AUTH ROUTES ========== */}
             <Route
                 path="/login"
                 element={
-                    <PublicRoute>
+                    <AuthRoute>
                         <LoginPage />
-                    </PublicRoute>
+                    </AuthRoute>
                 }
             />
             <Route
                 path="/register"
                 element={
-                    <PublicRoute>
+                    <AuthRoute>
                         <RegisterPage />
-                    </PublicRoute>
+                    </AuthRoute>
                 }
             />
 
-            {/* Protected Routes with Layout */}
+            {/* ========== DASHBOARD ROUTES (Protected) ========== */}
             <Route
                 element={
                     <ProtectedRoute>
@@ -83,13 +105,13 @@ function App() {
                 {/* Appointments */}
                 <Route path="/appointments" element={<AppointmentsPage />} />
                 <Route path="/appointments/add" element={<AppointmentFormPage />} />
+                
+                {/* Settings */}
+                <Route path="/settings" element={<SettingsPage />} />
             </Route>
 
-            {/* Default Route */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-            {/* 404 Route */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            {/* ========== FALLBACK ========== */}
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     )
 }
