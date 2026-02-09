@@ -10,11 +10,7 @@ import User from "../models/User";
 // Middleware to protect routes and ensure user is authenticated
 export const protect = asyncHandler(
   async (req: AuthRequest, res: Response, next: NextFunction) => {
-    // Console debuging
-    console.log("=== PROTECT MIDDLEWARE ===");
-    console.log("Headers:", req.headers.authorization);
-    console.log("Cookies:", req.cookies?.token);
-
+    
     let token: string | undefined;
 
     /// Check for token in Authorization header or cookies
