@@ -1,4 +1,4 @@
-// server/src/routes/index.ts - UPDATE
+// server/src/routes/index.ts
 
 import { Router } from 'express';
 import authRoutes from './auth.routes';
@@ -7,15 +7,18 @@ import statsRoutes from './statsRoutes';
 import doctorRoutes from './doctorRoutes';
 import appointmentRoutes from './appointmentRoutes';
 import profileRoutes from './profileRoutes';
-import publicRoutes from './publicRoutes';  // ADD THIS
+import publicRoutes from './publicRoutes';
 
+// Initialize main router
 const router = Router();
 
-// Public routes (no auth required)
-router.use('/public', publicRoutes);  // ADD THIS
+// Public routes (no authentication required)
+router.use('/public', publicRoutes);
 
-// Protected routes
+// Auth routes
 router.use('/auth', authRoutes);
+
+// Protected routes (authentication required)
 router.use('/patients', patientRoutes);
 router.use('/stats', statsRoutes);
 router.use('/doctors', doctorRoutes);
