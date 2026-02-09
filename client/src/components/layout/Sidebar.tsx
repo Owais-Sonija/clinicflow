@@ -1,124 +1,193 @@
 // client/src/components/layout/Sidebar.tsx
 
-import { NavLink } from "react-router-dom";
-import { useAppSelector, useAppDispatch } from "../../app/hooks";
-import { logoutUser } from "../../features/auth/authSlice";
+import { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAppSelector, useAppDispatch } from '../../app/hooks';
+import { logoutUser } from '../../features/auth/authSlice';
+import { useToast } from '../../context/ToastContext';
+import { ThemeToggle } from '../ui/ThemeToggle';
+import { Avatar } from '../ui/Avatar';
+import { cn } from '../../lib/utils';
 
-
-// import icons from lucide
-import {  LayoutDashboard, 
-    Users, 
-    UserCog, 
-    Calendar, 
-    FileText, 
+// ============ ICONS ============
+import {
+    LayoutDashboard,
+    Users,
+    UserCog,
+    Calendar,
+    FileText,
     Settings,
-    LogOut } from "lucide-react";
+    LogOut,
+    ChevronLeft,
+    ChevronRight,
+    Home
+} from 'lucide-react';
 
-// Navigation items
+// ============ NAVIGATION CONFIG ============
 const navItems = [
-    {
-        label: "Dashboard",
-        path: "/dashboard",
-        icon: LayoutDashboard,
-    },
-    {
-        label: "Patients",
-        path: "/patients",
-        icon: Users,
-    },
-    {
-        label: "Doctors",
-        path: "/doctors",
-        icon: UserCog,
-    },
-    {
-        label: "Appointments",
-        path: "/appointments",
-        icon: Calendar,
-    },
-    {
-        label: "Reports",
-        path: "/reports",
-        icon: FileText,
-    },
-    {
-        label: "Settings",
-        path: "/settings",
-        icon: Settings,
-    },
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Patients', path: '/patients', icon: Users },
+    { label: 'Doctors', path: '/doctors', icon: UserCog },
+    { label: 'Appointments', path: '/appointments', icon: Calendar },
+    { label: 'Reports', path: '/reports', icon: FileText },
+    { label: 'Settings', path: '/settings', icon: Settings },
 ];
-  
-// Function Sidebar
+
+// ============ SIDEBAR COMPONENT ============
 function Sidebar() {
-    // dispatch
+    // Hooks
     const dispatch = useAppDispatch();
-
-    // state
+    const navigate = useNavigate();
+    const { success } = useToast();
+    
+    // State
     const user = useAppSelector((state) => state.auth.user);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
-    // Handle logout
-    const handleLogout = () => {
-        dispatch(logoutUser());
+    // ============ HANDLERS ============
+    const handleLogout = async () => {
+        await dispatch(logoutUser());
+        success('Logged Out', 'You have been successfully logged out.');
+        navigate('/login');
     };
 
-return (
-        <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
-            {/* Logo */}
-            <div className="p-6 border-b border-gray-800">
-                <h1 className="text-2xl font-bold text-blue-400">
-                    ClinicFlow
-                </h1>
+    // ============ RENDER ============
+    return (
+        <aside
+            className={cn(
+                'h-screen sticky top-0 flex flex-col',
+                'bg-sidebar-background border-r border-sidebar-border',
+                'transition-all duration-300 ease-in-out',
+                isCollapsed ? 'w-20' : 'w-64'
+            )}
+        >
+            {/* Logo Section */}
+            <div className="h-20 flex items-center justify-between px-4 border-b border-sidebar-border">
+                {!isCollapsed && (
+                    <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                            <span className="text-white font-bold text-xl">C</span>
+                        </div>
+                        <div>
+                            <span className="text-lg font-bold text-sidebar-foreground">Clinic</span>
+                            <span className="text-lg font-bold text-blue-600">Flow</span>
+                        </div>
+                    </div>
+                )}
+                
+                {/* Collapse Toggle */}
+                <button
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className={cn(
+                        'p-2 rounded-lg transition-colors',
+                        'hover:bg-sidebar-accent text-sidebar-foreground',
+                        isCollapsed && 'mx-auto'
+                    )}
+                    title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                >
+                    {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+                </button>
             </div>
-            
-            {/* User Info */}
-            <div className="p-4 border-b border-gray-800">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
-                        {user?.name?.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                        <p className="font-medium">{user?.name}</p>
-                        <p className="text-sm text-gray-400 capitalize">{user?.role}</p>
-                    </div>
+
+            {/* User Info Section */}
+            <div className={cn(
+                'p-4 border-b border-sidebar-border',
+                isCollapsed && 'flex justify-center'
+            )}>
+                <div className={cn(
+                    'flex items-center gap-3',
+                    isCollapsed && 'flex-col'
+                )}>
+                    <Avatar name={user?.name || 'User'} size="md" />
+                    {!isCollapsed && (
+                        <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sidebar-foreground truncate">
+                                {user?.name}
+                            </p>
+                            <p className="text-xs text-sidebar-foreground/60 capitalize">
+                                {user?.role}
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
-            
-            {/* Navigation */}
-            <nav className="flex-1 p-4">
-                <ul className="space-y-2">
+
+            {/* Navigation Section */}
+            <nav className="flex-1 p-3 overflow-y-auto no-scrollbar">
+                <ul className="space-y-1">
                     {navItems.map((item) => (
                         <li key={item.path}>
                             <NavLink
                                 to={item.path}
                                 className={({ isActive }) =>
-                                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                                        isActive
-                                            ? 'bg-blue-600 text-white'
-                                            : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                                    }`
+                                    cn(
+                                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                                        'text-sidebar-foreground/70 hover:text-sidebar-foreground',
+                                        'hover:bg-sidebar-accent',
+                                        isActive && [
+                                            'bg-blue-600 text-white',
+                                            'hover:bg-blue-700 hover:text-white',
+                                            'shadow-lg shadow-blue-600/25'
+                                        ],
+                                        isCollapsed && 'justify-center px-2'
+                                    )
                                 }
+                                title={isCollapsed ? item.label : undefined}
                             >
                                 <item.icon size={20} />
-                                <span>{item.label}</span>
+                                {!isCollapsed && (
+                                    <span className="font-medium">{item.label}</span>
+                                )}
                             </NavLink>
                         </li>
                     ))}
                 </ul>
             </nav>
-            
-            {/* Logout Button */}
-            <div className="p-4 border-t border-gray-800">
+
+            {/* Footer Section */}
+            <div className="p-3 border-t border-sidebar-border space-y-2">
+                {/* Back to Website */}
+                <NavLink
+                    to="/"
+                    className={cn(
+                        'flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all',
+                        'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent',
+                        isCollapsed && 'justify-center px-2'
+                    )}
+                    title={isCollapsed ? 'Back to Website' : undefined}
+                >
+                    <Home size={20} />
+                    {!isCollapsed && <span className="font-medium">Back to Website</span>}
+                </NavLink>
+
+                {/* Theme Toggle */}
+                <div className={cn(
+                    'flex items-center gap-3 px-3 py-2',
+                    isCollapsed && 'justify-center'
+                )}>
+                    <ThemeToggle />
+                    {!isCollapsed && (
+                        <span className="text-sm text-sidebar-foreground/70">Theme</span>
+                    )}
+                </div>
+
+                {/* Logout Button */}
                 <button
                     onClick={handleLogout}
-                    className="flex items-center gap-3 px-4 py-3 w-full text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
+                    className={cn(
+                        'flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all',
+                        'text-sidebar-foreground/70',
+                        'hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50',
+                        isCollapsed && 'justify-center px-2'
+                    )}
+                    title={isCollapsed ? 'Logout' : undefined}
                 >
                     <LogOut size={20} />
-                    <span>Logout</span>
+                    {!isCollapsed && <span className="font-medium">Logout</span>}
                 </button>
             </div>
         </aside>
-    )    
+    );
 }
 
-    
 export default Sidebar;
