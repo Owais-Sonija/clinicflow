@@ -1,17 +1,15 @@
 // server/src/routes/reportRoutes.ts
+// Report generation routes (placeholder)
 
 import { Router } from 'express';
 import { protect } from '../middlewares/auth.middleware';
-import { generatePatientPDF, generateAppointmentPDF, getAnalytics } from '../controllers/reportController';
 
 const router = Router();
-
-// Protect all routes
 router.use(protect);
 
-// Report routes
-router.get('/patients/pdf', generatePatientPDF);
-router.get('/appointments/pdf', generateAppointmentPDF);
-router.get('/analytics', getAnalytics);
+// TODO: Implement report routes
+router.get('/patients', (req, res) => {
+    res.json({ message: 'Patient report - Coming soon' });
+});
 
 export default router;

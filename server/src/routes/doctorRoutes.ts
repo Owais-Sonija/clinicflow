@@ -1,21 +1,15 @@
 // server/src/routes/doctorRoutes.ts
+// Doctor management routes (placeholder)
 
-import { Router } from "express";
-import { protect, authorize } from "../middlewares/auth.middleware";
-import { getAllDoctors, getDoctorById, createDoctor, updateDoctor, deleteDoctor, getAvailableDoctors } from "../controllers/doctorController";
+import { Router } from 'express';
+import { protect } from '../middlewares/auth.middleware';
 
 const router = Router();
-
-// Protect route
 router.use(protect);
 
-// Protected routes
-router.get("/", getAllDoctors);
-router.get("/available", getAvailableDoctors);
-router.get("/:id", getDoctorById);
-router.post("/", authorize("admin"), createDoctor);
-router.put("/:id", authorize("admin"), updateDoctor);
-router.delete("/:id", authorize("admin"), deleteDoctor);
-
+// TODO: Implement doctor routes
+router.get('/', (req, res) => {
+    res.json({ message: 'Doctor routes - Coming soon' });
+});
 
 export default router;

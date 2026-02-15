@@ -1,28 +1,16 @@
 // server/src/routes/publicRoutes.ts
+// Public routes (no authentication required)
 
 import { Router } from 'express';
-import { 
-    getPublicDoctors, 
-    getPublicDoctorById, 
-    getPublicTimeSlots,
-    getSpecializations,
-    getPublicStats
-} from '../controllers/publicController';
 
-// Initialize router
 const router = Router();
 
-// Doctor routes (public)
-router.get('/doctors', getPublicDoctors);
-router.get('/doctors/:id', getPublicDoctorById);
-
-// Time slots route (public)
-router.get('/slots', getPublicTimeSlots);
-
-// Specializations route (public)
-router.get('/specializations', getSpecializations);
-
-// Public stats route
-router.get('/stats', getPublicStats);
+// Public health check
+router.get('/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Public API is working',
+    });
+});
 
 export default router;
