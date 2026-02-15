@@ -1,177 +1,204 @@
 // client/src/features/auth/authSlice.ts
+// Redux slice for authentication state management
+// Handles login, register, logout, and current user
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../lib/axios';
-import type { AuthResponse, LoginCredentials, RegisterData, User } from '../../types';
+import type {
+    AuthResponse,
+    LoginCredentials,
+    RegisterData,
+    User,
+} from '../../types';
 
+// ======================
+// STATE INTERFACE
+// ======================
 
-// Define the initial state using that type
 interface AuthState {
     user: User | null;
     token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     error: string | null;
-}   
+}
 
-// Initial state
+// ======================
+// INITIAL STATE
+// ======================
+
 const initialState: AuthState = {
-    // Try to get user and token from localStorage
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
-    token: localStorage.getItem('token'),
+    user: null,
+    token: null,
     isLoading: false,
-    isAuthenticated: !!localStorage.getItem('token'),
+    isAuthenticated: false,
     error: null,
 };
 
-// Async thunk for user login
-// Register user
+// ======================
+// ASYNC THUNKS
+// ======================
+
+// Register new user
 export const registerUser = createAsyncThunk(
     'auth/register',
     async (userData: RegisterData, { rejectWithValue }) => {
         try {
-            const response = await api.post<AuthResponse>('/auth/register', userData)
-               return response.data.data; // Return user data and token
+            const response = await api.post<AuthResponse>(
+                '/auth/register',
+                userData
+            );
+            return response.data.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Registration failed');
+            return rejectWithValue(
+                error.response?.data?.message || 'Registration failed'
+            );
         }
     }
 );
 
-// Async thunk for user login
+// Login existing user
 export const loginUser = createAsyncThunk(
     'auth/login',
     async (credentials: LoginCredentials, { rejectWithValue }) => {
         try {
-            const response = await api.post<AuthResponse>('/auth/login', credentials);
-            return response.data.data; // Return user data and token
+            const response = await api.post<AuthResponse>(
+                '/auth/login',
+                credentials
+            );
+            return response.data.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Login failed');
+            return rejectWithValue(
+                error.response?.data?.message || 'Login failed'
+            );
         }
     }
 );
 
-// Logout user thunk
+// Logout user
 export const logoutUser = createAsyncThunk(
     'auth/logout',
-    // No arguments needed for logout beacause we are just clearing data
     async (_, { rejectWithValue }) => {
         try {
             await api.post('/auth/logout');
             return;
-        }
-        catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Logout failed');
+        } catch (error: any) {
+            return rejectWithValue(
+                error.response?.data?.message || 'Logout failed'
+            );
         }
     }
 );
 
-// Get current user thunk
+// Get current authenticated user
 export const getCurrentUser = createAsyncThunk(
     'auth/getCurrentUser',
-    // No arguments needed because we are fetching the current user
     async (_, { rejectWithValue }) => {
         try {
             const response = await api.get<AuthResponse>('/auth/me');
-            return response.data.data.user; // Return user data
+            return response.data.data.user;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Fetching user failed');
+            return rejectWithValue(
+                error.response?.data?.message || 'Fetching user failed'
+            );
         }
     }
 );
 
-// Create the auth slice
+// ======================
+// SLICE DEFINITION
+// ======================
+
 const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        // You can add synchronous reducers here if needed
-        // For example, to clear errors
+        // Clear any error messages
         clearError(state) {
             state.error = null;
         },
-        restAuth: (state) => {
+        // Reset entire auth state (for manual logout/cleanup)
+        resetAuth(state) {
             state.user = null;
             state.token = null;
             state.isAuthenticated = false;
             state.isLoading = false;
             state.error = null;
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-        }
-
+        },
     },
-
     extraReducers: (builder) => {
-        // Handle register user
+        // ======================
+        // REGISTER
+        // ======================
         builder.addCase(registerUser.pending, (state) => {
             state.isLoading = true;
             state.error = null;
-        })
-        // Handle register user fulfilled
+        });
         builder.addCase(registerUser.fulfilled, (state, action) => {
             state.isLoading = false;
             state.user = action.payload.user;
             state.token = action.payload.token;
             state.isAuthenticated = true;
-            localStorage.setItem('user', JSON.stringify(action.payload.user));// Store user in localStorage
-            localStorage.setItem('token', action.payload.token); // Store token in localStorage
-        })
-        // Handle register user rejected
+            state.error = null;
+        });
         builder.addCase(registerUser.rejected, (state, action) => {
             state.isLoading = false;
             state.error = action.payload as string;
-        })
-        // Handle login user
+        });
+
+        // ======================
+        // LOGIN
+        // ======================
         builder.addCase(loginUser.pending, (state) => {
             state.isLoading = true;
             state.error = null;
-        })
-        // Handle login user fulfilled
+        });
         builder.addCase(loginUser.fulfilled, (state, action) => {
             state.isLoading = false;
             state.user = action.payload.user;
             state.token = action.payload.token;
             state.isAuthenticated = true;
-            localStorage.setItem('user', JSON.stringify(action.payload.user));// Store user in localStorage
-            localStorage.setItem('token', action.payload.token); // Store token in localStorage
-        })
-        // Handle login user rejected
+            state.error = null;
+        });
         builder.addCase(loginUser.rejected, (state, action) => {
             state.isLoading = false;
             state.error = action.payload as string;
-        })
-        // Handle logout user
+        });
+
+        // ======================
+        // LOGOUT
+        // ======================
         builder.addCase(logoutUser.fulfilled, (state) => {
             state.user = null;
             state.token = null;
             state.isAuthenticated = false;
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-        })
-        // Handle get current user
+            state.error = null;
+        });
+
+        // ======================
+        // GET CURRENT USER
+        // ======================
         builder.addCase(getCurrentUser.pending, (state) => {
             state.isLoading = true;
-        })
-        // Handle get current user fulfilled
+        });
         builder.addCase(getCurrentUser.fulfilled, (state, action) => {
             state.isLoading = false;
             state.user = action.payload;
             state.isAuthenticated = true;
-        } )
-        // Handle get current user rejected
+        });
         builder.addCase(getCurrentUser.rejected, (state) => {
+            // Token invalid - clear auth state
             state.isLoading = false;
             state.user = null;
-            state.isAuthenticated = false;
             state.token = null;
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-        })
+            state.isAuthenticated = false;
+        });
     },
 });
 
-// Export actions
-export const { clearError, restAuth } = authSlice.actions;
-// Export reducer
+// ======================
+// EXPORTS
+// ======================
+
+export const { clearError, resetAuth } = authSlice.actions;
 export default authSlice.reducer;

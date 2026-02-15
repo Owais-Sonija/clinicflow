@@ -1,59 +1,65 @@
 // server/src/models/User.ts
+// User model for authentication and user management
+// Supports roles: patient, doctor, admin
 
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-// Define the User interface extending mongoose Document
+// ======================
+// INTERFACE DEFINITION
+// ======================
 
 export interface IUser extends Document {
-
-    //     Document = Mongoose document type (has _id, save(), etc.)
-
+    _id: mongoose.Types.ObjectId;
     name: string;
     email: string;
     password: string;
-    role: 'patient' | 'doctor' | 'admin'; // User roles
-
-    isVerified: boolean; // Email verification status
+    role: 'patient' | 'doctor' | 'admin';
+    isVerified: boolean;
     phone?: string;
     avatar?: string;
     createdAt: Date;
     updatedAt: Date;
-
-    // Method signature for comparing passwords
+    // Method to compare passwords during login
     comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-// Define the User schema
+// ======================
+// SCHEMA DEFINITION
+// ======================
+
 const UserSchema = new Schema<IUser>(
     {
-        name: { 
+        name: {
             type: String,
-             required: [true, "Name is required"], 
-             trim: true,
-             minlength: [2, "Name must be at least 2 characters long"],
-                maxlength: [50, "Name cannot exceed 50 characters"] 
-            
-            },
-
+            required: [true, 'Name is required'],
+            trim: true,
+            minlength: [2, 'Name must be at least 2 characters'],
+            maxlength: [50, 'Name cannot exceed 50 characters'],
+        },
         email: {
             type: String,
-            required: [true, "Email is required"],
+            required: [true, 'Email is required'],
             unique: true,
             trim: true,
             lowercase: true,
-            match: [  /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-                "Please enter a valid email"],
+            match: [
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                'Please enter a valid email',
+            ],
         },
         password: {
             type: String,
-            required: [true, "Password is required"],
-            minlength: [6, "Password must be at least 6 characters long"],
-            select: false, // Exclude password from query results by default
+            required: [true, 'Password is required'],
+            minlength: [6, 'Password must be at least 6 characters'],
+            select: false, // Never return password in queries by default
         },
         role: {
             type: String,
-            enum: ['patient', 'doctor', 'admin'],
+            enum: {
+                values: ['patient', 'doctor', 'admin'],
+                message: 'Role must be patient, doctor, or admin',
+            },
             default: 'patient',
         },
         isVerified: {
@@ -63,42 +69,62 @@ const UserSchema = new Schema<IUser>(
         phone: {
             type: String,
             trim: true,
-            match: [/^\+?[1-9]\d{1,14}$/, "Please enter a valid phone number"],
         },
         avatar: {
             type: String,
             trim: true,
-            match: [/^https?:\/\/.+\.(jpg|jpeg|png|gif)$/, "Please enter a valid image URL"],
         },
     },
-    { timestamps: true } // Automatically manage createdAt and updatedAt fields
+    {
+        timestamps: true, // Adds createdAt and updatedAt automatically
+    }
 );
 
-// Pre-save hook to hash password before saving
-UserSchema.pre('save', async function () {
-    // pre = before saving to database
+// ======================
+// INDEXES
+// ======================
 
-    // Only hash the password if it has been modified (or is new)
-    if (!this.isModified('password')) return;
+// Index for faster email lookups during login
+UserSchema.index({ email: 1 });
 
-    // Hash the password with a salt round of 10
-    const salt = await bcrypt.genSalt(10);
+// Index for filtering users by role
+UserSchema.index({ role: 1 });
 
-    // Hash the password
-    this.password = await bcrypt.hash(this.password, salt);
-}
-);
+// ======================
+// MIDDLEWARE
+// ======================
 
-//Method: Compare password for login
+// Hash password before saving to database
+UserSchema.pre('save', async function (next) {
+    // Only hash if password was modified (or is new)
+    if (!this.isModified('password')) {
+        return next();
+    }
+
+    try {
+        // Generate salt and hash password
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error as Error);
+    }
+});
+
+// ======================
+// METHODS
+// ======================
+
+// Compare entered password with hashed password in database
 UserSchema.methods.comparePassword = async function (
     candidatePassword: string
 ): Promise<boolean> {
-    // Return true if passwords match
+    return bcrypt.compare(candidatePassword, this.password);
+};
 
-    // Compare the plain text password with the hashed password
-    return await bcrypt.compare(candidatePassword, this.password);
-}
+// ======================
+// MODEL EXPORT
+// ======================
 
-// Create and export the User model
 const User = mongoose.model<IUser>('User', UserSchema);
 export default User;
