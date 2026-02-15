@@ -1,28 +1,34 @@
 // client/src/lib/axios.ts
+// Axios instance configured for ClinicFlow API
+// Uses httpOnly cookies for secure authentication
 
 import axios from 'axios';
 
-// Api URL from environment variables
+// ======================
+// CONFIGURATION
+// ======================
+
+// API base URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-//  Create an Axios instance with default configurations
+// Create an Axios instance with default configurations
 const api = axios.create({
     baseURL: API_URL,
-    withCredentials: true, // Include cookies in requests
+    withCredentials: true, // ✅ CRITICAL: Send httpOnly cookies with every request
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Request interceptor - add token to requests
+// ======================
+// REQUEST INTERCEPTOR
+// ======================
+
+// Add any additional headers before request is sent
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
-        // token present, add it to headers
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        // Return the modified config
+        // ✅ No manual token handling - cookies are sent automatically
+        // You can add custom headers here if needed
         return config;
     },
     (error) => {
@@ -30,21 +36,27 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor - handle responses globally 
+// ======================
+// RESPONSE INTERCEPTOR
+// ======================
+
+// Handle responses and errors globally
 api.interceptors.response.use(
-    (response) => { 
+    (response) => {
+        // Successful response - return as is
         return response;
     },
     (error) => {
-        // Handle errors globally
-        if(error.response?.status === 401) {
-            // Clear token and redirect to login
-            localStorage.removeItem('token');
-            // Clear user data if stored
+        // Handle 401 Unauthorized errors
+        if (error.response?.status === 401) {
+            // Clear any client-side state (not tokens, those are httpOnly)
             localStorage.removeItem('user');
+            
             // Redirect to login page
             window.location.href = '/login';
         }
+
+        // Handle other errors
         return Promise.reject(error);
     }
 );

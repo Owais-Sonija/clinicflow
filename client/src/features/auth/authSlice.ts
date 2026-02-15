@@ -1,6 +1,6 @@
 // client/src/features/auth/authSlice.ts
 // Redux slice for authentication state management
-// Handles login, register, logout, and current user
+// Uses httpOnly cookies for tokens (not stored in state/localStorage)
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../lib/axios';
@@ -17,7 +17,6 @@ import type {
 
 interface AuthState {
     user: User | null;
-    token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     error: string | null;
@@ -28,10 +27,13 @@ interface AuthState {
 // ======================
 
 const initialState: AuthState = {
-    user: null,
-    token: null,
+    // Try to restore user from localStorage (not token - that's in httpOnly cookie)
+    user: localStorage.getItem('user') 
+        ? JSON.parse(localStorage.getItem('user')!) 
+        : null,
     isLoading: false,
-    isAuthenticated: false,
+    // Check if user exists to determine auth status
+    isAuthenticated: !!localStorage.getItem('user'),
     error: null,
 };
 
@@ -48,6 +50,7 @@ export const registerUser = createAsyncThunk(
                 '/auth/register',
                 userData
             );
+            // Cookie is set automatically by backend
             return response.data.data;
         } catch (error: any) {
             return rejectWithValue(
@@ -66,6 +69,7 @@ export const loginUser = createAsyncThunk(
                 '/auth/login',
                 credentials
             );
+            // Cookie is set automatically by backend
             return response.data.data;
         } catch (error: any) {
             return rejectWithValue(
@@ -81,6 +85,7 @@ export const logoutUser = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             await api.post('/auth/logout');
+            // Cookie is cleared automatically by backend
             return;
         } catch (error: any) {
             return rejectWithValue(
@@ -120,10 +125,11 @@ const authSlice = createSlice({
         // Reset entire auth state (for manual logout/cleanup)
         resetAuth(state) {
             state.user = null;
-            state.token = null;
             state.isAuthenticated = false;
             state.isLoading = false;
             state.error = null;
+            // Clear user from localStorage
+            localStorage.removeItem('user');
         },
     },
     extraReducers: (builder) => {
@@ -137,9 +143,10 @@ const authSlice = createSlice({
         builder.addCase(registerUser.fulfilled, (state, action) => {
             state.isLoading = false;
             state.user = action.payload.user;
-            state.token = action.payload.token;
             state.isAuthenticated = true;
             state.error = null;
+            // Store user in localStorage for persistence
+            localStorage.setItem('user', JSON.stringify(action.payload.user));
         });
         builder.addCase(registerUser.rejected, (state, action) => {
             state.isLoading = false;
@@ -156,9 +163,10 @@ const authSlice = createSlice({
         builder.addCase(loginUser.fulfilled, (state, action) => {
             state.isLoading = false;
             state.user = action.payload.user;
-            state.token = action.payload.token;
             state.isAuthenticated = true;
             state.error = null;
+            // Store user in localStorage for persistence
+            localStorage.setItem('user', JSON.stringify(action.payload.user));
         });
         builder.addCase(loginUser.rejected, (state, action) => {
             state.isLoading = false;
@@ -170,9 +178,9 @@ const authSlice = createSlice({
         // ======================
         builder.addCase(logoutUser.fulfilled, (state) => {
             state.user = null;
-            state.token = null;
             state.isAuthenticated = false;
             state.error = null;
+            localStorage.removeItem('user');
         });
 
         // ======================
@@ -185,13 +193,15 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.user = action.payload;
             state.isAuthenticated = true;
+            // Update user in localStorage
+            localStorage.setItem('user', JSON.stringify(action.payload));
         });
         builder.addCase(getCurrentUser.rejected, (state) => {
             // Token invalid - clear auth state
             state.isLoading = false;
             state.user = null;
-            state.token = null;
             state.isAuthenticated = false;
+            localStorage.removeItem('user');
         });
     },
 });

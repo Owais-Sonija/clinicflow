@@ -91,24 +91,20 @@ UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 
 // ======================
-// MIDDLEWARE
+// MIDDLEWARE (Pre-save hook)
 // ======================
 
 // Hash password before saving to database
-UserSchema.pre('save', async function (next) {
+// ✅ NO next() needed in Mongoose 6+ async middleware
+UserSchema.pre('save', async function () {
     // Only hash if password was modified (or is new)
     if (!this.isModified('password')) {
-        return next();
+        return; // Simply return, no next() needed
     }
 
-    try {
-        // Generate salt and hash password
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error as Error);
-    }
+    // Generate salt and hash password
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
 });
 
 // ======================
